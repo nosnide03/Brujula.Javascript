@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>Brujula - Javascript</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+	<script src="./Scripts/jquery.mockjax.js"></script>
+	<script>
+
+		$(document).ready(function () {
+
+			$.mockjax({
+				url: '/rest',
+				data: { action: "get" },
+				responseText: [{ id: 1, text: "Option 1" }, { id: 2, text: "Option 2" }]
+			});
+
+			$.ajax({
+				url: '/rest',
+				dataType: 'json',
+				data: {
+					action: "get"
+				},
+				success: function (json) {
+					loadOptions(json);
+				}
+			});
+
+			function loadOptions(response) {
+
+				var stateText = "";
+
+				$.each(response, function (index, item) {
+
+					stateText += item.id + "|" + item.text + ";";
+
+					$('#lista').append($('<option>', {
+						value: item.id,
+						text: item.text
+					}));
+				});
+
+				stateText = stateText.substring(0, stateText.length - 1);
+				$("#hdnState").val(stateText);
+			};
+
+			$("#btnAddOption").click(function () {
+
+				if ($("#txtNewOption").val() != "" && $("#txtNewOption").val().trim() != "") {
+
+					var optionText = $("#txtNewOption").val();
+
+					$('#lista').append($('<option>', {
+						value: optionText,
+						text: optionText
+					}));
+
+					addState();
+				}
+
+				$('#modalInput').modal('hide');
+			});
+
+			$("#remove").click(function () {
+
+				var options = $("#lista").val();
+
+				$.each(options, function (index, value) {
+					$('#lista option[value="' + value + '"]').remove();
+				});
+
+				if (options.length >= 1)
+					addState();
+
+			});
+
+			$("#backward").click(function () {
+				stepBackward();
+			});
+
+			$("#modalInput").on("hide.bs.modal", function () {
+				$("#txtNewOption").val("");
+			});
+
+
+			function addState() {
+
+				debugger;
+
+				var stateText = $("#hdnState").val() + "/";
+
+				$("#lista option").each(function () {
+					stateText += $(this).val() + "|" + $(this).text() + ";";
+				});
+
+				stateText = stateText.substring(0, stateText.length - 1);
+				$("#hdnState").val(stateText);
+				$("#backward").show();
+			}
+
+			function stepBackward() {
+
+				debugger;
+
+				var states = $("#hdnState").val();
+				var array = states.split("/");
+
+				if (array.length > 1) {
+
+					var stateTextPrev = array[array.length - 2].replace('/', '');
+					var options = stateTextPrev.split(";");
+					$('#lista').children('option').remove();
+					$.each(options, function (index, item) {
+						var values = item.split("|");
+						$('#lista').append($('<option>', {
+							value: values[0],
+							text: values[1]
+						}));
+					});
+
+					/** Restore states */
+					var stateText = "";
+					for (var i = 0; i <= array.length - 2; i++) {
+
+						if (stateText != "")
+							stateText += "/";
+
+						stateText += array[i];
+					}
+
+					if (array.length == 2)
+						$("#backward").hide();
+
+					$("#hdnState").val(stateText);
+
+				}
+				else {
+					var options = array[0].split(";");
+					$('#lista').children('option').remove();
+					$.each(options, function (index, item) {
+						var values = item.split("|");
+						$('#lista').append($('<option>', {
+							value: values[0],
+							text: values[1]
+						}));
+					});
+					$("#backward").hide();
+				}
+			}
+		});
+
+	</script>
+</head>
+
+<body>
+
+	<div class="container">
+		<h3>Características:</h3>
+		<div class="row">
+			<ul>
+				<li>Implementación del plugin Mockjax (dos opciones por defecto en el load)</li>
+				<li>Implementación de un modal de tipo prompt</li>
+				<li>Gestión de la lista de opciones en el select (agregar/eliminar)</li>
+				<li>Se agrega el comportamiento "Deshacer" a través de un hidden serializado con los siguientes valores:
+					<ul>
+						<li>El char '|' permite dividir el id/value por cada option</li>
+						<li>El char ';' permite dividir opciones</li>
+						<li>El char '/' permite dividir los estados que ha tenido el select</li>
+					</ul>
+					 
+				</li>
+				<li>Solo si se ha modificado el estado inicial del select será visible el botón deshacer</li>
+				<li>Multiselect</li>
+			</ul>
+		</div>
+		<form>
+			<div class="row" style="margin-top:10%">
+				<div class="col-md-3">
+				</div>
+				<div class="col-md-4">
+					<select multiple class="form-control" id="lista" style="min-height:150px;">
+					</select>
+				</div>
+				<div class="col-md-4">
+					<table>
+						<tbody>
+							<tr>
+								<td>
+									<button type="button" class="btn btn-default" aria-label="Left Align" id="add"
+										style="margin-bottom:5px!important;" data-toggle="modal"
+										data-target="#modalInput">
+										<span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+									</button>
+								</td>
+							</tr>
+							<tr>
+								<td>
+									<button type="button" class="btn btn-default" aria-label="Left Align" id="remove"
+										style="margin-bottom:5px!important;">
+										<span class="glyphicon glyphicon-minus" aria-hidden="true"></span>
+									</button>
+								</td>
+							</tr>
+							<tr>
+								<td>
+									<button type="button" class="btn btn-default" aria-label="Left Align" id="backward"
+										style="display:none;">
+										<span class="glyphicon glyphicon-step-backward" aria-hidden="true"></span>
+									</button>
+								</td>
+							</tr>
+						</tbody>
+						<table>
+				</div>
+			</div>
+		</form>
+	</div>
+	<!-- Modal -->
+	<div class="modal fade" id="modalInput" tabindex="-1" role="dialog" aria-labelledby="title" aria-hidden="true">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="title">Nueva Opción</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<div class="form-group">
+						<input type="text" class="form-control" id="txtNewOption">
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+					<button type="button" class="btn btn-primary" id="btnAddOption">Agregar</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<input type="hidden" id="hdnState" value="" />
+</body>
+
+</html>
